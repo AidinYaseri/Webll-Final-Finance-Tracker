@@ -1,0 +1,4 @@
+DROP DATABASE IF EXISTS "MyDB";
+CREATE DATABASE "MyDB";
+\c MyDB;
+-- your CREATE TABLE statements here

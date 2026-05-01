@@ -1,0 +1,32 @@
+{
+  "features": {
+    "ghcr.io/devcontainers-community/npm-features/typescript:1": {
+      "version": "1.1.0",
+      "resolved": "ghcr.io/devcontainers-community/npm-features/typescript@sha256:13a0f63e88513a6022431c39b7ca4ec732ba0760cdb6d882638f4ddf73deb0e7",
+      "integrity": "sha256:13a0f63e88513a6022431c39b7ca4ec732ba0760cdb6d882638f4ddf73deb0e7",
+      "dependsOn": [
+        "ghcr.io/devcontainers/features/node"
+      ]
+    },
+    "ghcr.io/devcontainers-extra/features/prettier:1": {
+      "version": "1.0.2",
+      "resolved": "ghcr.io/devcontainers-extra/features/prettier@sha256:be8a83826ac496bd1e298ecf1052e600bdddd8ef3248ca630b53a9bdea3d3d76",
+      "integrity": "sha256:be8a83826ac496bd1e298ecf1052e600bdddd8ef3248ca630b53a9bdea3d3d76"
+    },
+    "ghcr.io/devcontainers-extra/features/tsx:1": {
+      "version": "1.0.2",
+      "resolved": "ghcr.io/devcontainers-extra/features/tsx@sha256:94274781625f34acafb721a253f758153852e830334e7d51b3a3013ce52a377b",
+      "integrity": "sha256:94274781625f34acafb721a253f758153852e830334e7d51b3a3013ce52a377b"
+    },
+    "ghcr.io/devcontainers/features/node": {
+      "version": "2.0.0",
+      "resolved": "ghcr.io/devcontainers/features/node@sha256:fedd4c11f7adfb64283b578dddc7da906728daa25fa293351c9d913231acf12f",
+      "integrity": "sha256:fedd4c11f7adfb64283b578dddc7da906728daa25fa293351c9d913231acf12f"
+    },
+    "ghcr.io/robbert229/devcontainer-features/postgresql-client:1": {
+      "version": "1.0.0",
+      "resolved": "ghcr.io/robbert229/devcontainer-features/postgresql-client@sha256:aceac5b09662b4d169eb8c9497add67e0662ef71509b3011087d276e9eea5b1c",
+      "integrity": "sha256:aceac5b09662b4d169eb8c9497add67e0662ef71509b3011087d276e9eea5b1c"
+    }
+  }
+}
