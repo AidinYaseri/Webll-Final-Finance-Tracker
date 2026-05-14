@@ -1,0 +1,157 @@
+.transaction-list {
+  background: rgba(15, 23, 42, 0.82);
+  padding: 25px;
+  border-radius: 20px;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  box-shadow: 0 18px 46px rgba(2, 6, 23, 0.28);
+  backdrop-filter: blur(16px);
+}
+
+.transaction-list h2 {
+  margin-bottom: 20px;
+  color: #f8fafc;
+  font-size: 20px;
+}
+
+.table-responsive {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+table thead {
+  background: rgba(30, 41, 59, 0.85);
+}
+
+table th {
+  padding: 15px;
+  text-align: left;
+  font-weight: 600;
+  color: #cbd5e1;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+  font-size: 14px;
+}
+
+table td {
+  padding: 15px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+  font-size: 14px;
+  color: #e2e8f0;
+}
+
+table tbody tr:hover {
+  background-color: rgba(56, 189, 248, 0.06);
+}
+
+.transaction-row.income {
+}
+
+.transaction-row.expense {
+}
+
+.type-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.type-badge.income {
+  background-color: rgba(74, 222, 128, 0.14);
+  color: #bbf7d0;
+}
+
+.type-badge.expense {
+  background-color: rgba(251, 113, 133, 0.14);
+  color: #fecdd3;
+}
+
+.amount {
+  font-weight: 600;
+  text-align: right;
+}
+
+.amount.positive {
+  color: #27ae60;
+}
+
+.amount.negative {
+  color: #e74c3c;
+}
+
+.description {
+  color: #94a3b8;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+}
+
+.btn-edit,
+.btn-delete {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.btn-edit {
+  background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%);
+  color: white;
+}
+
+.btn-edit:hover {
+  opacity: 0.95;
+}
+
+.btn-delete {
+  background: linear-gradient(135deg, #fb7185 0%, #ef4444 100%);
+  color: white;
+}
+
+.btn-delete:hover {
+  opacity: 0.95;
+}
+
+.empty-message {
+  text-align: center;
+  color: #94a3b8;
+  padding: 40px 20px;
+  font-size: 16px;
+}
+
+@media (max-width: 768px) {
+  .transaction-list {
+    padding: 15px;
+  }
+
+  table th,
+  table td {
+    padding: 10px;
+    font-size: 12px;
+  }
+
+  .actions {
+    flex-direction: column;
+  }
+
+  .btn-edit,
+  .btn-delete {
+    padding: 4px 8px;
+    font-size: 11px;
+    width: 100%;
+  }
+}
