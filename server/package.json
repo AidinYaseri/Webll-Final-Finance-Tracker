@@ -12,6 +12,7 @@
   "scripts": {
     "start": "tsx app.ts",
     "dev": "nodemon --exec tsx app.ts",
+    "seed:admin": "tsx scripts/seedAdmin.ts",
     "test": "jest --runInBand",
     "test:watch": "jest --watch"
   },

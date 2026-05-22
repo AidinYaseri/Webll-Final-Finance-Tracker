@@ -1,21 +1,21 @@
-import bcrypt from 'bcryptjs';
-import pool from '../db.js';
+import bcrypt from "bcryptjs";
+import pool from "../db.js";
 
 export class DuplicateEmailError extends Error {
   statusCode = 400;
 
-  constructor(message = 'Email already exists') {
+  constructor(message = "Email already exists") {
     super(message);
-    this.name = 'DuplicateEmailError';
+    this.name = "DuplicateEmailError";
   }
 }
 
 export class InvalidCredentialsError extends Error {
   statusCode = 401;
 
-  constructor(message = 'Invalid credentials') {
+  constructor(message = "Invalid credentials") {
     super(message);
-    this.name = 'InvalidCredentialsError';
+    this.name = "InvalidCredentialsError";
   }
 }
 
@@ -23,6 +23,7 @@ export interface UserProps {
   user_id: number;
   username: string;
   email: string;
+  is_admin: boolean;
 }
 
 export interface CreateUserInput {
@@ -35,11 +36,12 @@ export class User implements UserProps {
   constructor(
     public user_id: number,
     public username: string,
-    public email: string
+    public email: string,
+    public is_admin: boolean,
   ) {}
 
   static fromRow(row: UserProps) {
-    return new User(row.user_id, row.username, row.email);
+    return new User(row.user_id, row.username, row.email, row.is_admin);
   }
 
   static async create(input: CreateUserInput) {
@@ -47,13 +49,13 @@ export class User implements UserProps {
 
     try {
       const result = await pool.query<UserProps>(
-        'INSERT INTO users (username, email, password) VALUES ($1, $2, $3) RETURNING user_id, username, email',
-        [input.username, input.email, hashedPassword]
+        "INSERT INTO users (username, email, password) VALUES ($1, $2, $3) RETURNING user_id, username, email, is_admin",
+        [input.username, input.email, hashedPassword],
       );
 
       return User.fromRow(result.rows[0]);
     } catch (error: any) {
-      if (error.code === '23505') {
+      if (error.code === "23505") {
         throw new DuplicateEmailError();
       }
 
@@ -62,7 +64,10 @@ export class User implements UserProps {
   }
 
   static async login(email: string, password: string) {
-    const result = await pool.query<any>('SELECT * FROM users WHERE email = $1', [email]);
+    const result = await pool.query<any>(
+      "SELECT user_id, username, email, password, is_admin FROM users WHERE email = $1",
+      [email],
+    );
 
     if (result.rows.length === 0) {
       throw new InvalidCredentialsError();
@@ -80,8 +85,8 @@ export class User implements UserProps {
 
   static async findById(userId: number) {
     const result = await pool.query<UserProps>(
-      'SELECT user_id, username, email FROM users WHERE user_id = $1',
-      [userId]
+      "SELECT user_id, username, email, is_admin FROM users WHERE user_id = $1",
+      [userId],
     );
 
     if (result.rows.length === 0) {

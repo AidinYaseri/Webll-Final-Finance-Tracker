@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
-import { dashboardAPI, categoryAPI, transactionAPI } from '../services/api';
-import '../styles/Dashboard.css';
+import { useState, useEffect } from "react";
+import { useAuth } from "../hooks/useAuth";
+import { dashboardAPI, categoryAPI, transactionAPI } from "../services/api";
+import "../styles/Dashboard.css";
 
 interface Summary {
   total_income: number;
@@ -24,14 +25,18 @@ interface Monthly {
 }
 
 export const Dashboard = () => {
+  const { user } = useAuth();
   const [summary, setSummary] = useState<Summary | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [monthly, setMonthly] = useState<Monthly[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   const chartData = [...monthly].reverse();
-  const chartMaxValue = Math.max(...chartData.map((item) => Math.max(item.income, item.expenses)), 1);
+  const chartMaxValue = Math.max(
+    ...chartData.map((item) => Math.max(item.income, item.expenses)),
+    1,
+  );
 
   useEffect(() => {
     loadDashboardData();
@@ -48,9 +53,9 @@ export const Dashboard = () => {
       setSummary(summaryRes.data);
       setCategories(categoriesRes.data);
       setMonthly(monthlyRes.data);
-      setError('');
+      setError("");
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to load dashboard data');
+      setError(err.response?.data?.error || "Failed to load dashboard data");
     } finally {
       setIsLoading(false);
     }
@@ -60,6 +65,18 @@ export const Dashboard = () => {
 
   return (
     <div className="dashboard">
+      {user?.is_admin && (
+        <div className="admin-banner">
+          <h2>Admin</h2>
+          <p>
+            You are signed in as an administrator. Manage users, categories, and
+            platform stats.
+          </p>
+          <a className="admin-cta" href="/admin">
+            Go to Admin Panel
+          </a>
+        </div>
+      )}
       <h1>Financial Dashboard</h1>
 
       {error && <div className="error-message">{error}</div>}
@@ -68,7 +85,7 @@ export const Dashboard = () => {
         <div className="summary-cards">
           <div className="summary-card balance">
             <h3>Balance</h3>
-            <p className={summary.balance >= 0 ? 'positive' : 'negative'}>
+            <p className={summary.balance >= 0 ? "positive" : "negative"}>
               ${summary.balance.toFixed(2)}
             </p>
           </div>
@@ -116,20 +133,32 @@ export const Dashboard = () => {
                   <div key={month.month} className="chart-column">
                     <div className="chart-bars-inner">
                       <div className="bar-group income">
-                        <div className="bar-value">${month.income.toFixed(0)}</div>
+                        <div className="bar-value">
+                          ${month.income.toFixed(0)}
+                        </div>
                         <div className="bar-track">
-                          <div className="bar-fill income" style={{ height: `${Math.max(incomeHeight, 4)}%` }} />
+                          <div
+                            className="bar-fill income"
+                            style={{ height: `${Math.max(incomeHeight, 4)}%` }}
+                          />
                         </div>
                       </div>
                       <div className="bar-group expense">
-                        <div className="bar-value">${month.expenses.toFixed(0)}</div>
+                        <div className="bar-value">
+                          ${month.expenses.toFixed(0)}
+                        </div>
                         <div className="bar-track">
-                          <div className="bar-fill expense" style={{ height: `${Math.max(expenseHeight, 4)}%` }} />
+                          <div
+                            className="bar-fill expense"
+                            style={{ height: `${Math.max(expenseHeight, 4)}%` }}
+                          />
                         </div>
                       </div>
                     </div>
                     <div className="chart-label">
-                      {new Date(month.month).toLocaleDateString('en-US', { month: 'short' })}
+                      {new Date(month.month).toLocaleDateString("en-US", {
+                        month: "short",
+                      })}
                     </div>
                   </div>
                 );
@@ -137,7 +166,9 @@ export const Dashboard = () => {
             </div>
           </div>
         ) : (
-          <p className="empty-message">Add a few transactions to see the trend chart.</p>
+          <p className="empty-message">
+            Add a few transactions to see the trend chart.
+          </p>
         )}
       </div>
 
@@ -153,8 +184,12 @@ export const Dashboard = () => {
                     <span className={`type ${cat.type}`}>{cat.type}</span>
                   </div>
                   <div className="category-stats">
-                    <span className="amount">${cat.total_amount.toFixed(2)}</span>
-                    <span className="count">{cat.transaction_count} transaction(s)</span>
+                    <span className="amount">
+                      ${cat.total_amount.toFixed(2)}
+                    </span>
+                    <span className="count">
+                      {cat.transaction_count} transaction(s)
+                    </span>
                   </div>
                 </div>
               ))}
@@ -170,15 +205,24 @@ export const Dashboard = () => {
             <div className="monthly-list">
               {monthly.map((month, idx) => (
                 <div key={idx} className="monthly-item">
-                  <h4>{new Date(month.month).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</h4>
+                  <h4>
+                    {new Date(month.month).toLocaleDateString("en-US", {
+                      month: "long",
+                      year: "numeric",
+                    })}
+                  </h4>
                   <div className="monthly-breakdown">
                     <div>
                       <span>Income:</span>
-                      <span className="amount income">${month.income.toFixed(2)}</span>
+                      <span className="amount income">
+                        ${month.income.toFixed(2)}
+                      </span>
                     </div>
                     <div>
                       <span>Expenses:</span>
-                      <span className="amount expense">${month.expenses.toFixed(2)}</span>
+                      <span className="amount expense">
+                        ${month.expenses.toFixed(2)}
+                      </span>
                     </div>
                   </div>
                 </div>

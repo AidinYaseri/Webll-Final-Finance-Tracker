@@ -1,5 +1,6 @@
-import express from 'express';
-import request from 'supertest';
+import express from "express";
+import request from "supertest";
+import { beforeEach, expect, jest, test } from "@jest/globals";
 
 const makeMock = () => {
   const calls: any[] = [];
@@ -46,7 +47,7 @@ const userMocks = {
 class DuplicateEmailError extends Error {}
 class InvalidCredentialsError extends Error {}
 
-jest.mock('../src/models/User', () => ({
+jest.mock("../src/models/User", () => ({
   User: {
     create: (...args: any[]) => userMocks.create(...args),
     login: (...args: any[]) => userMocks.login(...args),
@@ -56,7 +57,7 @@ jest.mock('../src/models/User', () => ({
   InvalidCredentialsError,
 }));
 
-import authRoutes from '../src/routes/auth';
+import authRoutes from "../src/routes/auth";
 
 const buildApp = () => {
   const app = express();
@@ -64,13 +65,15 @@ const buildApp = () => {
 
   app.use(express.json());
   app.use((req, _res, next) => {
-    const session: Record<string, unknown> & { destroy: (callback?: () => void) => void } = {
+    const session: Record<string, unknown> & {
+      destroy: (callback?: () => void) => void;
+    } = {
       destroy: (callback?: () => void) => {
         if (callback) callback();
       },
     } as any;
 
-    const userId = req.header('x-test-user-id');
+    const userId = req.header("x-test-user-id");
     if (userId) {
       session.userId = Number(userId);
     }
@@ -79,7 +82,7 @@ const buildApp = () => {
     state.session = session;
     next();
   });
-  app.use('/api/auth', authRoutes);
+  app.use("/api/auth", authRoutes);
 
   return { app, state };
 };
@@ -90,101 +93,151 @@ beforeEach(() => {
   userMocks.findById.mockClear();
 });
 
-test('rejects registration with missing fields', async () => {
+test("rejects registration with missing fields", async () => {
   const { app } = buildApp();
 
-  const response = await request(app).post('/api/auth/register').send({
-    email: 'ada@example.com',
-    password: 'secret123',
+  const response = await request(app).post("/api/auth/register").send({
+    email: "ada@example.com",
+    password: "secret123",
   });
 
   expect(response.status).toBe(400);
-  expect(response.body).toEqual({ error: 'Missing required fields' });
+  expect(response.body).toEqual({ error: "Missing required fields" });
 });
 
-test('rejects duplicate registration emails', async () => {
+test("rejects duplicate registration emails", async () => {
   const { app } = buildApp();
-  userMocks.create.mockRejectedValueOnce(new DuplicateEmailError('Email already exists'));
+  userMocks.create.mockRejectedValueOnce(
+    new DuplicateEmailError("Email already exists"),
+  );
 
-  const response = await request(app).post('/api/auth/register').send({
-    username: 'Ada',
-    email: 'ada@example.com',
-    password: 'secret123',
+  const response = await request(app).post("/api/auth/register").send({
+    username: "Ada",
+    email: "ada@example.com",
+    password: "secret123",
   });
 
   expect(response.status).toBe(400);
-  expect(response.body).toEqual({ error: 'Email already exists' });
+  expect(response.body).toEqual({ error: "Email already exists" });
 });
 
-test('creates a session on successful registration', async () => {
+test("creates a session on successful registration", async () => {
   const { app, state } = buildApp();
-  userMocks.create.mockResolvedValueOnce({ user_id: 1, username: 'Ada', email: 'ada@example.com' });
+  userMocks.create.mockResolvedValueOnce({
+    user_id: 1,
+    username: "Ada",
+    email: "ada@example.com",
+  });
 
-  const response = await request(app).post('/api/auth/register').send({
-    username: 'Ada',
-    email: 'ada@example.com',
-    password: 'secret123',
+  const response = await request(app).post("/api/auth/register").send({
+    username: "Ada",
+    email: "ada@example.com",
+    password: "secret123",
     rememberMe: true,
   });
 
   expect(userMocks.create.mock.calls.length).toBeGreaterThan(0);
-  expect(userMocks.create.mock.calls[0][0]).toEqual({ username: 'Ada', email: 'ada@example.com', password: 'secret123' });
+  expect(userMocks.create.mock.calls[0][0]).toEqual({
+    username: "Ada",
+    email: "ada@example.com",
+    password: "secret123",
+  });
   expect(response.status).toBe(201);
-  expect(response.body.user).toEqual({ user_id: 1, username: 'Ada', email: 'ada@example.com' });
+  expect(response.body.user).toEqual({
+    user_id: 1,
+    username: "Ada",
+    email: "ada@example.com",
+  });
   expect(state.session?.userId).toBe(1);
-  const registerCookies = response.headers['set-cookie'] as unknown as string[];
-  expect(registerCookies.some((cookie) => cookie.startsWith('rememberEmail='))).toBe(true);
+  const registerCookies = response.headers["set-cookie"] as unknown as string[];
+  expect(
+    registerCookies.some((cookie) => cookie.startsWith("rememberEmail=")),
+  ).toBe(true);
 });
 
-test('rejects invalid login credentials', async () => {
+test("rejects invalid login credentials", async () => {
   const { app } = buildApp();
-  userMocks.login.mockRejectedValueOnce(new InvalidCredentialsError('Invalid credentials'));
+  userMocks.login.mockRejectedValueOnce(
+    new InvalidCredentialsError("Invalid credentials"),
+  );
 
-  const response = await request(app).post('/api/auth/login').send({ email: 'ada@example.com', password: 'wrong-password' });
+  const response = await request(app)
+    .post("/api/auth/login")
+    .send({ email: "ada@example.com", password: "wrong-password" });
 
   expect(response.status).toBe(401);
-  expect(response.body).toEqual({ error: 'Invalid credentials' });
+  expect(response.body).toEqual({ error: "Invalid credentials" });
 });
 
-test('logs in and updates the session', async () => {
+test("logs in and updates the session", async () => {
   const { app, state } = buildApp();
-  userMocks.login.mockResolvedValueOnce({ user_id: 7, username: 'Ada', email: 'ada@example.com' });
+  userMocks.login.mockResolvedValueOnce({
+    user_id: 7,
+    username: "Ada",
+    email: "ada@example.com",
+  });
 
-  const response = await request(app).post('/api/auth/login').send({ email: 'ada@example.com', password: 'secret123', rememberMe: false });
+  const response = await request(app)
+    .post("/api/auth/login")
+    .send({
+      email: "ada@example.com",
+      password: "secret123",
+      rememberMe: false,
+    });
 
   expect(response.status).toBe(200);
-  expect(response.body.user).toEqual({ user_id: 7, username: 'Ada', email: 'ada@example.com' });
+  expect(response.body.user).toEqual({
+    user_id: 7,
+    username: "Ada",
+    email: "ada@example.com",
+  });
   expect(state.session?.userId).toBe(7);
-  const loginCookies = response.headers['set-cookie'] as unknown as string[];
-  expect(loginCookies.some((cookie) => cookie.startsWith('rememberEmail='))).toBe(true);
+  const loginCookies = response.headers["set-cookie"] as unknown as string[];
+  expect(
+    loginCookies.some((cookie) => cookie.startsWith("rememberEmail=")),
+  ).toBe(true);
 });
 
-test('returns the current user when authenticated', async () => {
+test("returns the current user when authenticated", async () => {
   const { app } = buildApp();
-  userMocks.findById.mockResolvedValueOnce({ user_id: 7, username: 'Ada', email: 'ada@example.com' });
+  userMocks.findById.mockResolvedValueOnce({
+    user_id: 7,
+    username: "Ada",
+    email: "ada@example.com",
+  });
 
-  const response = await request(app).get('/api/auth/me').set('x-test-user-id', '7');
+  const response = await request(app)
+    .get("/api/auth/me")
+    .set("x-test-user-id", "7");
 
   expect(response.status).toBe(200);
-  expect(response.body).toEqual({ user_id: 7, username: 'Ada', email: 'ada@example.com' });
+  expect(response.body).toEqual({
+    user_id: 7,
+    username: "Ada",
+    email: "ada@example.com",
+  });
 });
 
-test('rejects unauthenticated requests', async () => {
+test("rejects unauthenticated requests", async () => {
   const { app } = buildApp();
 
-  const response = await request(app).get('/api/auth/me');
+  const response = await request(app).get("/api/auth/me");
 
   expect(response.status).toBe(401);
-  expect(response.body).toEqual({ error: 'Authentication required' });
+  expect(response.body).toEqual({ error: "Authentication required" });
 });
 
-test('logs out and clears the session cookie', async () => {
+test("logs out and clears the session cookie", async () => {
   const { app } = buildApp();
 
-  const response = await request(app).post('/api/auth/logout').set('x-test-user-id', '7');
+  const response = await request(app)
+    .post("/api/auth/logout")
+    .set("x-test-user-id", "7");
 
   expect(response.status).toBe(200);
-  expect(response.body).toEqual({ message: 'Logged out successfully' });
-  const logoutCookies = response.headers['set-cookie'] as unknown as string[];
-  expect(logoutCookies.some((cookie) => cookie.startsWith('connect.sid='))).toBe(true);
+  expect(response.body).toEqual({ message: "Logged out successfully" });
+  const logoutCookies = response.headers["set-cookie"] as unknown as string[];
+  expect(
+    logoutCookies.some((cookie) => cookie.startsWith("connect.sid=")),
+  ).toBe(true);
 });

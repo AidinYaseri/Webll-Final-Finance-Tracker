@@ -1,17 +1,26 @@
-import { createContext, useState, useEffect, ReactNode } from 'react';
-import { authAPI } from '../services/api';
+import { createContext, useState, useEffect, ReactNode } from "react";
+import { authAPI } from "../services/api";
 
 interface User {
   user_id: number;
   username: string;
   email: string;
+  is_admin: boolean;
 }
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  login: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
-  register: (username: string, email: string, password: string) => Promise<void>;
+  login: (
+    email: string,
+    password: string,
+    rememberMe?: boolean,
+  ) => Promise<void>;
+  register: (
+    username: string,
+    email: string,
+    password: string,
+  ) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -41,7 +50,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(user);
   };
 
-  const register = async (username: string, email: string, password: string) => {
+  const register = async (
+    username: string,
+    email: string,
+    password: string,
+  ) => {
     const response = await authAPI.register(username, email, password);
     const { user } = response.data;
     setUser(user);

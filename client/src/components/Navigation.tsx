@@ -1,6 +1,6 @@
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
-import '../styles/Navigation.css';
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
+import "../styles/Navigation.css";
 
 export const Navigation = () => {
   const { user, logout } = useAuth();
@@ -8,7 +8,7 @@ export const Navigation = () => {
 
   const handleLogout = async () => {
     await logout();
-    navigate('/login');
+    navigate("/login");
   };
 
   if (!user) return null;
@@ -17,7 +17,7 @@ export const Navigation = () => {
     <nav className="navbar">
       <div className="navbar-container">
         <Link to="/dashboard" className="navbar-brand">
-           Finance Tracker
+          Finance Tracker
         </Link>
         <ul className="navbar-menu">
           <li>
@@ -26,6 +26,11 @@ export const Navigation = () => {
           <li>
             <Link to="/transactions">Transactions</Link>
           </li>
+          {user.is_admin && (
+            <li>
+              <Link to="/admin">Admin Panel</Link>
+            </li>
+          )}
           <li className="user-info">
             <span>Welcome, {user.username}!</span>
           </li>

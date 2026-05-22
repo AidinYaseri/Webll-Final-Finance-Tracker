@@ -1,0 +1,56 @@
+.admin-dashboard {
+  padding: 20px;
+}
+.admin-dashboard h1 {
+  margin-bottom: 16px;
+}
+.stat-grid {
+  display: flex;
+  gap: 16px;
+}
+.stat-card {
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  min-width: 140px;
+}
+.stat-value {
+  font-size: 24px;
+  font-weight: 600;
+}
+.category-form {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.category-list {
+  list-style: none;
+  padding: 0;
+}
+.category-list li {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 4px 0;
+}
+.users table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.users th,
+.users td {
+  border: 1px solid #eee;
+  padding: 8px;
+  text-align: left;
+}
+.users button {
+  background: #c62828;
+  color: white;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.users button:hover {
+  opacity: 0.9;
+}
