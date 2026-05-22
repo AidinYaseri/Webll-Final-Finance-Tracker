@@ -6,8 +6,8 @@ export const Navigation = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate('/login');
   };
 
@@ -22,9 +22,6 @@ export const Navigation = () => {
         <ul className="navbar-menu">
           <li>
             <Link to="/dashboard">Dashboard</Link>
-          </li>
-          <li>
-            <Link to="/insights">Insights</Link>
           </li>
           <li>
             <Link to="/transactions">Transactions</Link>

@@ -10,8 +10,8 @@ export const Transactions = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [filterType, setFilterType] = useState<'all' | 'income' | 'expense'>('all');
   const [filterCategory, setFilterCategory] = useState<number | null>(null);
+  const [filterDate, setFilterDate] = useState('');
 
   useEffect(() => {
     loadData();
@@ -68,8 +68,8 @@ export const Transactions = () => {
   };
 
   const filteredTransactions = transactions.filter((t) => {
-    if (filterType !== 'all' && t.type !== filterType) return false;
     if (filterCategory && t.category_id !== filterCategory) return false;
+    if (filterDate && t.date !== filterDate) return false;
     return true;
   });
 
@@ -94,14 +94,6 @@ export const Transactions = () => {
         <div className="transaction-list-section">
           <div className="filters">
             <div className="filter-group">
-              <label>Type:</label>
-              <select value={filterType} onChange={(e) => setFilterType(e.target.value as any)}>
-                <option value="all">All</option>
-                <option value="income">Income</option>
-                <option value="expense">Expense</option>
-              </select>
-            </div>
-            <div className="filter-group">
               <label>Category:</label>
               <select
                 value={filterCategory || ''}
@@ -114,6 +106,10 @@ export const Transactions = () => {
                   </option>
                 ))}
               </select>
+            </div>
+            <div className="filter-group">
+              <label>Date:</label>
+              <input type="date" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} />
             </div>
           </div>
 

@@ -1,23 +1,17 @@
 import { Request, Response, NextFunction } from 'express';
-import { verifyToken } from './utils.js';
 
 export interface AuthenticatedRequest extends Request {
   userId?: number;
 }
 
 export const authMiddleware = (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-  const token = req.headers.authorization?.split(' ')[1];
+  const userId = req.session?.userId;
 
-  if (!token) {
-    return res.status(401).json({ error: 'No token provided' });
+  if (!userId) {
+    return res.status(401).json({ error: 'Authentication required' });
   }
 
-  const decoded = verifyToken(token);
-  if (!decoded) {
-    return res.status(401).json({ error: 'Invalid or expired token' });
-  }
-
-  req.userId = decoded.userId;
+  req.userId = userId;
   next();
 };
 

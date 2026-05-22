@@ -1,7 +1,5 @@
 import { Router } from 'express';
-import bcryptjs from 'bcryptjs';
-import pool from '../db.js';
-import { generateToken } from '../utils.js';
+import { User, DuplicateEmailError, InvalidCredentialsError } from '../models/User.js';
 import { AuthenticatedRequest, authMiddleware } from '../middleware.js';
 
 const router = Router();
@@ -15,29 +13,27 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    const hashedPassword = await bcryptjs.hash(password, 10);
+    const user = await User.create({ username, email, password });
+    req.session.userId = user.user_id;
 
-    const result = await pool.query(
-      'INSERT INTO users (username, email, password) VALUES ($1, $2, $3) RETURNING user_id, username, email',
-      [username, email, hashedPassword]
-    );
-
-    const user = result.rows[0];
-    const token = generateToken(user.user_id);
+    const rememberEmail = req.body.rememberMe;
+    if (rememberEmail) {
+      res.cookie('rememberEmail', email, {
+        httpOnly: false,
+        sameSite: 'lax',
+        maxAge: 1000 * 60 * 60 * 24 * 30,
+      });
+    }
 
     res.status(201).json({
       message: 'User registered successfully',
-      token,
-      user: {
-        user_id: user.user_id,
-        username: user.username,
-        email: user.email,
-      },
+      user,
     });
   } catch (error: any) {
-    if (error.code === '23505') {
-      return res.status(400).json({ error: 'Username or email already exists' });
+    if (error instanceof DuplicateEmailError) {
+      return res.status(400).json({ error: error.message });
     }
+
     res.status(500).json({ error: error.message });
   }
 });
@@ -45,37 +41,34 @@ router.post('/register', async (req, res) => {
 // Login
 router.post('/login', async (req, res) => {
   try {
-    const { username, password } = req.body;
+    const { email, password, rememberMe } = req.body;
 
-    if (!username || !password) {
+    if (!email || !password) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    const result = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
+    const user = await User.login(email, password);
+    req.session.userId = user.user_id;
 
-    if (result.rows.length === 0) {
-      return res.status(401).json({ error: 'Invalid credentials' });
+    if (rememberMe) {
+      res.cookie('rememberEmail', email, {
+        httpOnly: false,
+        sameSite: 'lax',
+        maxAge: 1000 * 60 * 60 * 24 * 30,
+      });
+    } else {
+      res.clearCookie('rememberEmail');
     }
-
-    const user = result.rows[0];
-    const isPasswordValid = await bcryptjs.compare(password, user.password);
-
-    if (!isPasswordValid) {
-      return res.status(401).json({ error: 'Invalid credentials' });
-    }
-
-    const token = generateToken(user.user_id);
 
     res.json({
       message: 'Login successful',
-      token,
-      user: {
-        user_id: user.user_id,
-        username: user.username,
-        email: user.email,
-      },
+      user,
     });
   } catch (error: any) {
+    if (error instanceof InvalidCredentialsError) {
+      return res.status(401).json({ error: error.message });
+    }
+
     res.status(500).json({ error: error.message });
   }
 });
@@ -83,22 +76,22 @@ router.post('/login', async (req, res) => {
 // Get current user
 router.get('/me', authMiddleware, async (req: AuthenticatedRequest, res) => {
   try {
-    const result = await pool.query('SELECT user_id, username, email FROM users WHERE user_id = $1', [
-      req.userId,
-    ]);
+    const user = await User.findById(req.userId!);
 
-    if (result.rows.length === 0) {
+    if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    res.json(result.rows[0]);
+    res.json(user);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// Logout (frontend handles token removal)
+// Logout
 router.post('/logout', authMiddleware, (req, res) => {
+  req.session.destroy(() => undefined);
+  res.clearCookie('connect.sid');
   res.json({ message: 'Logged out successfully' });
 });
 

@@ -1,7 +1,9 @@
-import pool from './db.js';
+import { getPool } from './db.js';
 
 export const initializeDatabase = async () => {
   try {
+    const pool = await getPool();
+
     // Create Users table
     await pool.query(`
       CREATE TABLE IF NOT EXISTS users (

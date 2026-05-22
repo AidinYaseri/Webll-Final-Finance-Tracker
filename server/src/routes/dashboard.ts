@@ -46,31 +46,6 @@ router.get('/monthly', authMiddleware, async (req: AuthenticatedRequest, res) =>
   }
 });
 
-// Get daily breakdown for a specific month
-router.get('/daily/:year/:month', authMiddleware, async (req: AuthenticatedRequest, res) => {
-  try {
-    const { year, month } = req.params;
-    const startDate = new Date(parseInt(year), parseInt(month) - 1, 1).toISOString().split('T')[0];
-    const endDate = new Date(parseInt(year), parseInt(month), 0).toISOString().split('T')[0];
-
-    const result = await pool.query(
-      `SELECT 
-        date,
-        COALESCE(SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END), 0)::float8 as income,
-        COALESCE(SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END), 0)::float8 as expenses
-       FROM transactions
-       WHERE user_id = $1 AND date >= $2 AND date <= $3
-       GROUP BY date
-       ORDER BY date ASC`,
-      [req.userId, startDate, endDate]
-    );
-
-    res.json(result.rows);
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
 // Get category breakdown
 router.get('/categories', authMiddleware, async (req: AuthenticatedRequest, res) => {
   try {

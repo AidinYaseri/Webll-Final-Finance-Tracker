@@ -4,26 +4,18 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },
-});
-
-// Add token to requests
-apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
 });
 
 // Auth endpoints
 export const authAPI = {
   register: (username: string, email: string, password: string) =>
     apiClient.post('/auth/register', { username, email, password }),
-  login: (username: string, password: string) =>
-    apiClient.post('/auth/login', { username, password }),
+  login: (email: string, password: string, rememberMe = false) =>
+    apiClient.post('/auth/login', { email, password, rememberMe }),
   logout: () => apiClient.post('/auth/logout'),
   getCurrentUser: () => apiClient.get('/auth/me'),
 };
@@ -48,7 +40,6 @@ export const categoryAPI = {
 export const dashboardAPI = {
   getSummary: () => apiClient.get('/dashboard/summary'),
   getMonthly: () => apiClient.get('/dashboard/monthly'),
-  getDaily: (year: number, month: number) => apiClient.get(`/dashboard/daily/${year}/${month}`),
   getCategories: () => apiClient.get('/dashboard/categories'),
 };
 
