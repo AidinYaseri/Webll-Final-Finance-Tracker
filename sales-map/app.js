@@ -1,7 +1,7 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
 import {
-  getFirestore,
-  enableIndexedDbPersistence,
+  initializeFirestore,
+  persistentLocalCache,
   collection,
   doc,
   setDoc,
@@ -21,12 +21,9 @@ const firebaseConfig = {
   appId:             '1:620050893865:web:aa11d5d054c9c6e8b6a038',
 };
 
-const fbApp  = initializeApp(firebaseConfig);
-const db     = getFirestore(fbApp);
+const fbApp   = initializeApp(firebaseConfig);
+const db      = initializeFirestore(fbApp, { localCache: persistentLocalCache() });
 const pinsRef = collection(db, 'pins');
-
-// Enable offline caching so pins still show with no signal
-enableIndexedDbPersistence(db).catch(() => {});
 
 // ── Constants ──────────────────────────────────────────────────
 const STATUS = {
@@ -130,7 +127,11 @@ function startSync() {
       });
       updateStats();
     },
-    () => setSyncStatus('offline')
+    err => {
+      setSyncStatus('offline');
+      showToast('Sync error — check Firestore rules in Firebase console', 5000);
+      console.error('Firestore onSnapshot error:', err);
+    }
   );
 }
 
