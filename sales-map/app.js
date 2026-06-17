@@ -1,35 +1,47 @@
-'use strict';
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
+import {
+  getFirestore,
+  enableIndexedDbPersistence,
+  collection,
+  doc,
+  setDoc,
+  updateDoc,
+  deleteDoc,
+  onSnapshot,
+  serverTimestamp,
+} from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
+
+// ── Firebase setup ─────────────────────────────────────────────
+const firebaseConfig = {
+  apiKey:            'AIzaSyAhdX-_aKqXwdHHAiWqzwYcuN09oKkESg4',
+  authDomain:        'aeas-a2d06.firebaseapp.com',
+  projectId:         'aeas-a2d06',
+  storageBucket:     'aeas-a2d06.firebasestorage.app',
+  messagingSenderId: '620050893865',
+  appId:             '1:620050893865:web:aa11d5d054c9c6e8b6a038',
+};
+
+const fbApp  = initializeApp(firebaseConfig);
+const db     = getFirestore(fbApp);
+const pinsRef = collection(db, 'pins');
+
+// Enable offline caching so pins still show with no signal
+enableIndexedDbPersistence(db).catch(() => {});
 
 // ── Constants ──────────────────────────────────────────────────
-const STORAGE_KEY = 'sales-map-v1';
-
 const STATUS = {
   red:    { color: '#ef4444', label: 'Not Interested' },
   yellow: { color: '#f59e0b', label: 'Considering'    },
   green:  { color: '#22c55e', label: 'Sale!'           },
 };
 
-// ── Data helpers ───────────────────────────────────────────────
-function loadHouses() {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
-  catch { return []; }
-}
-
-function saveHouses() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(houses));
-}
-
-function uid() {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-}
-
 // ── State ──────────────────────────────────────────────────────
 let map;
-let houses        = loadHouses();
-let markers       = {};      // id → Leaflet marker
-let pendingLatLng = null;    // location for a new pin
-let editingId     = null;    // id of pin being edited
-let undoStack     = [];      // stack of { type, payload } for undo
+let houses        = [];       // kept in sync with Firestore via onSnapshot
+let markers       = {};       // firestoreId → Leaflet marker
+let pendingLatLng = null;
+let editingId     = null;
+let undoStack     = [];
 
 // ── DOM refs ───────────────────────────────────────────────────
 const overlay    = document.getElementById('modal-overlay');
@@ -40,43 +52,48 @@ const locateBtn  = document.getElementById('locate-btn');
 const undoBtn    = document.getElementById('undo-btn');
 const addHereBtn = document.getElementById('add-here-btn');
 const toast      = document.getElementById('toast');
+const syncBadge  = document.getElementById('sync-badge');
 
+// ── Toast ──────────────────────────────────────────────────────
 let toastTimer;
-
-function showToast(msg, duration = 2000) {
+function showToast(msg, duration = 2200) {
   clearTimeout(toastTimer);
   toast.textContent = msg;
   toast.classList.remove('hidden');
   toastTimer = setTimeout(() => toast.classList.add('hidden'), duration);
 }
 
+// ── Sync badge ─────────────────────────────────────────────────
+function setSyncStatus(status) {
+  syncBadge.className = `sync-${status}`;
+  syncBadge.title = { online: 'Synced', offline: 'Offline — changes will sync when reconnected', connecting: 'Connecting…' }[status];
+}
+
+window.addEventListener('online',  () => setSyncStatus('online'));
+window.addEventListener('offline', () => setSyncStatus('offline'));
+
 // ── Marker creation ────────────────────────────────────────────
-function markerIcon(status, pulse = false) {
+function markerIcon(status) {
   const { color } = STATUS[status];
   return L.divIcon({
-    html: `<div class="pin-inner${pulse ? ' marker-pulse' : ''}" style="
-      width: 26px; height: 26px;
-      background: ${color};
-      border: 3px solid rgba(255,255,255,0.9);
-      border-radius: 50%;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.45);
+    html: `<div style="
+      width:26px;height:26px;
+      background:${color};
+      border:3px solid rgba(255,255,255,0.9);
+      border-radius:50%;
+      box-shadow:0 2px 8px rgba(0,0,0,0.45);
     "></div>`,
-    className: 'house-marker',
+    className:   'house-marker',
     iconSize:    [26, 26],
     iconAnchor:  [13, 13],
     popupAnchor: [0, -18],
   });
 }
 
-function addMarkerToMap(house, pulse = false) {
-  const m = L.marker([house.lat, house.lng], { icon: markerIcon(house.status, pulse) })
-    .addTo(map);
-
-  m.on('click', e => {
-    e.originalEvent?.stopPropagation();
-    openEditModal(house.id);
-  });
-
+function addMarkerToMap(house) {
+  if (markers[house.id]) return; // already on map
+  const m = L.marker([house.lat, house.lng], { icon: markerIcon(house.status) }).addTo(map);
+  m.on('click', e => { e.originalEvent?.stopPropagation(); openEditModal(house.id); });
   markers[house.id] = m;
 }
 
@@ -87,6 +104,34 @@ function refreshMarkerIcon(id) {
 
 function removeMarkerFromMap(id) {
   if (markers[id]) { map.removeLayer(markers[id]); delete markers[id]; }
+}
+
+// ── Real-time Firestore listener ───────────────────────────────
+function startSync() {
+  onSnapshot(
+    pinsRef,
+    snapshot => {
+      setSyncStatus('online');
+      snapshot.docChanges().forEach(change => {
+        const id   = change.doc.id;
+        const data = change.doc.data();
+
+        if (change.type === 'added') {
+          if (!houses.find(h => h.id === id)) houses.push({ id, ...data });
+          addMarkerToMap({ id, ...data });
+        } else if (change.type === 'modified') {
+          const idx = houses.findIndex(h => h.id === id);
+          if (idx >= 0) houses[idx] = { id, ...data };
+          refreshMarkerIcon(id);
+        } else if (change.type === 'removed') {
+          houses = houses.filter(h => h.id !== id);
+          removeMarkerFromMap(id);
+        }
+      });
+      updateStats();
+    },
+    () => setSyncStatus('offline')
+  );
 }
 
 // ── Map init ───────────────────────────────────────────────────
@@ -100,61 +145,31 @@ function initMap() {
 
   L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-  // Default view; will be overridden if geolocation succeeds
   map.setView([37.7749, -122.4194], 16);
 
-  // Tap on empty map → add a new house there
-  map.on('click', e => {
-    // Ignore if we just tapped a marker (marker click fires first + stops propagation)
-    openAddModal(e.latlng);
-  });
+  map.on('click', e => openAddModal(e.latlng));
 
-  houses.forEach(h => addMarkerToMap(h));
   gotoMyLocation(false);
+  startSync();
 }
 
 // ── Geolocation ────────────────────────────────────────────────
-let watchId = null;
-let myDot   = null;
+let myDot = null;
 
 function gotoMyLocation(animate = true) {
   if (!navigator.geolocation) { showToast('Geolocation not supported'); return; }
-
   navigator.geolocation.getCurrentPosition(
     pos => {
       const { latitude: lat, longitude: lng, accuracy } = pos.coords;
       map.setView([lat, lng], animate ? map.getZoom() : 17, { animate });
-      updateMyDot(lat, lng, accuracy);
+      if (!myDot) myDot = L.layerGroup().addTo(map);
+      else myDot.clearLayers();
+      L.circle([lat, lng], { radius: accuracy, color: '#3b82f6', fillColor: '#3b82f6', fillOpacity: 0.08, weight: 1 }).addTo(myDot);
+      L.circleMarker([lat, lng], { radius: 8, color: '#fff', weight: 2, fillColor: '#3b82f6', fillOpacity: 1 }).addTo(myDot);
     },
     () => showToast('Could not get location'),
     { enableHighAccuracy: true, timeout: 10000 }
   );
-}
-
-function updateMyDot(lat, lng, accuracy) {
-  if (!myDot) {
-    myDot = L.layerGroup().addTo(map);
-  } else {
-    myDot.clearLayers();
-  }
-
-  // Accuracy circle
-  L.circle([lat, lng], {
-    radius: accuracy,
-    color: '#3b82f6',
-    fillColor: '#3b82f6',
-    fillOpacity: 0.08,
-    weight: 1,
-  }).addTo(myDot);
-
-  // Blue dot
-  L.circleMarker([lat, lng], {
-    radius: 8,
-    color: '#fff',
-    weight: 2,
-    fillColor: '#3b82f6',
-    fillOpacity: 1,
-  }).addTo(myDot);
 }
 
 // ── Modal ──────────────────────────────────────────────────────
@@ -183,94 +198,70 @@ function closeModal() {
 
 // ── Status selection ───────────────────────────────────────────
 document.querySelectorAll('.status-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
+  btn.addEventListener('click', async () => {
     const status = btn.dataset.status;
 
     if (pendingLatLng) {
-      const house = {
-        id:        uid(),
+      const newRef = doc(pinsRef);          // generate ID client-side
+      await setDoc(newRef, {
         lat:       pendingLatLng.lat,
         lng:       pendingLatLng.lng,
         status,
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-      };
-      houses.push(house);
-      saveHouses();
-      addMarkerToMap(house, true);
-      undoStack.push({ type: 'add', id: house.id });
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+      undoStack.push({ type: 'add', id: newRef.id });
       undoBtn.disabled = false;
       showToast(`Pinned as "${STATUS[status].label}"`);
     } else if (editingId) {
       const house = houses.find(h => h.id === editingId);
       if (house) {
-        undoStack.push({ type: 'edit', id: house.id, prev: house.status });
-        house.status    = status;
-        house.updatedAt = Date.now();
-        saveHouses();
-        refreshMarkerIcon(editingId);
+        undoStack.push({ type: 'edit', id: editingId, prev: house.status });
+        await updateDoc(doc(db, 'pins', editingId), { status, updatedAt: serverTimestamp() });
         undoBtn.disabled = false;
         showToast(`Updated to "${STATUS[status].label}"`);
       }
     }
 
-    updateStats();
     closeModal();
   });
 });
 
 // ── Delete ─────────────────────────────────────────────────────
-deleteBtn.addEventListener('click', () => {
+deleteBtn.addEventListener('click', async () => {
   if (!editingId) return;
   const house = houses.find(h => h.id === editingId);
   if (house) {
     undoStack.push({ type: 'delete', house: { ...house } });
-    houses        = houses.filter(h => h.id !== editingId);
-    saveHouses();
-    removeMarkerFromMap(editingId);
+    await deleteDoc(doc(db, 'pins', editingId));
     undoBtn.disabled = false;
     showToast('Pin removed');
-    updateStats();
   }
   closeModal();
 });
 
 // ── Undo ───────────────────────────────────────────────────────
-undoBtn.addEventListener('click', () => {
+undoBtn.addEventListener('click', async () => {
   const action = undoStack.pop();
   if (!action) return;
   undoBtn.disabled = undoStack.length === 0;
 
   if (action.type === 'add') {
-    houses = houses.filter(h => h.id !== action.id);
-    saveHouses();
-    removeMarkerFromMap(action.id);
+    await deleteDoc(doc(db, 'pins', action.id));
     showToast('Undo: pin removed');
   } else if (action.type === 'edit') {
-    const house = houses.find(h => h.id === action.id);
-    if (house) {
-      house.status    = action.prev;
-      house.updatedAt = Date.now();
-      saveHouses();
-      refreshMarkerIcon(action.id);
-      showToast('Undo: status reverted');
-    }
+    await updateDoc(doc(db, 'pins', action.id), { status: action.prev, updatedAt: serverTimestamp() });
+    showToast('Undo: status reverted');
   } else if (action.type === 'delete') {
-    houses.push(action.house);
-    saveHouses();
-    addMarkerToMap(action.house, true);
+    const { id, ...data } = action.house;
+    await setDoc(doc(db, 'pins', id), { ...data, updatedAt: serverTimestamp() });
     showToast('Undo: pin restored');
   }
-
-  updateStats();
 });
 
 // ── Add at GPS location ────────────────────────────────────────
 addHereBtn.addEventListener('click', () => {
-  if (!navigator.geolocation) {
-    showToast('Geolocation not supported — tap the map instead');
-    return;
-  }
+  if (!navigator.geolocation) { showToast('Tap the map to pin manually'); return; }
   addHereBtn.disabled = true;
   addHereBtn.querySelector('span').textContent = 'Getting location…';
 
@@ -291,22 +282,16 @@ addHereBtn.addEventListener('click', () => {
   );
 });
 
-// ── Locate button ──────────────────────────────────────────────
 locateBtn.addEventListener('click', () => gotoMyLocation(true));
 
-// ── Cancel / close overlay ─────────────────────────────────────
+// ── Cancel / dismiss ───────────────────────────────────────────
 cancelBtn.addEventListener('click', closeModal);
+overlay.addEventListener('click', e => { if (e.target === overlay) closeModal(); });
 
-overlay.addEventListener('click', e => {
-  if (e.target === overlay) closeModal();
-});
-
-// Swipe down to dismiss
 let touchStartY = 0;
 document.getElementById('modal').addEventListener('touchstart', e => {
   touchStartY = e.touches[0].clientY;
 }, { passive: true });
-
 document.getElementById('modal').addEventListener('touchend', e => {
   if (e.changedTouches[0].clientY - touchStartY > 60) closeModal();
 }, { passive: true });
@@ -323,14 +308,9 @@ function updateStats() {
 
 // ── Service worker ─────────────────────────────────────────────
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').catch(() => {});
-  });
+  navigator.serviceWorker.register('./sw.js').catch(() => {});
 }
 
 // ── Boot ───────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
-  initMap();
-  updateStats();
-  undoBtn.disabled = undoStack.length === 0;
-});
+setSyncStatus('connecting');
+initMap();

@@ -54,10 +54,31 @@ html, body {
   flex-shrink: 0;
 }
 
+#header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 #header h1 {
   font-size: 1.15rem;
   font-weight: 700;
   letter-spacing: -0.03em;
+}
+
+#sync-badge {
+  font-size: 0.55rem;
+  line-height: 1;
+  transition: color 0.4s;
+}
+
+.sync-online     { color: #22c55e; }
+.sync-offline    { color: #ef4444; }
+.sync-connecting { color: #f59e0b; animation: pulse-badge 1.2s ease-in-out infinite; }
+
+@keyframes pulse-badge {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.3; }
 }
 
 #header-actions {

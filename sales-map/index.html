@@ -16,7 +16,10 @@
 <body>
   <div id="app">
     <header id="header">
-      <h1>Sales Map</h1>
+      <div id="header-left">
+        <h1>Sales Map</h1>
+        <span id="sync-badge" class="sync-connecting" title="Connecting to sync…">&#9679;</span>
+      </div>
       <div id="header-actions">
         <button id="undo-btn" title="Undo last action" disabled>&#8630;</button>
         <button id="locate-btn" title="Center on my location">&#8982;</button>
@@ -91,6 +94,6 @@
   <div id="toast" class="hidden"></div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="app.js"></script>
+  <script type="module" src="app.js"></script>
 </body>
 </html>

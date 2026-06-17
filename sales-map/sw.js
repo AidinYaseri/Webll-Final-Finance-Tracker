@@ -36,6 +36,13 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
 
+  // Never intercept Firebase — it manages its own network + IndexedDB cache
+  if (
+    url.hostname.includes('firestore.googleapis.com') ||
+    url.hostname.includes('firebase') ||
+    url.hostname.includes('googleapis.com')
+  ) return;
+
   // Map tile requests — network first, fall back to cache
   if (url.hostname.endsWith('tile.openstreetmap.org')) {
     event.respondWith(
