@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Sales Map">
+  <meta name="theme-color" content="#0f172a">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <title>Sales Map</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app">
+    <header id="header">
+      <h1>Sales Map</h1>
+      <div id="header-actions">
+        <button id="undo-btn" title="Undo last action" disabled>&#8630;</button>
+        <button id="locate-btn" title="Center on my location">&#8982;</button>
+      </div>
+    </header>
+
+    <div id="map"></div>
+
+    <button id="add-here-btn" title="Drop a pin at my current GPS location">
+      <span>+ Add House Here</span>
+    </button>
+
+    <div id="stats-bar">
+      <div class="stat">
+        <span class="dot red-dot"></span>
+        <span id="red-count">0</span>
+        <span class="stat-label">No</span>
+      </div>
+      <div class="stat">
+        <span class="dot yellow-dot"></span>
+        <span id="yellow-count">0</span>
+        <span class="stat-label">Maybe</span>
+      </div>
+      <div class="stat">
+        <span class="dot green-dot"></span>
+        <span id="green-count">0</span>
+        <span class="stat-label">Sale</span>
+      </div>
+      <div class="stat total">
+        <span id="total-count">0</span>
+        <span class="stat-label">Total</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Status picker bottom sheet -->
+  <div id="modal-overlay" class="hidden" role="dialog" aria-modal="true">
+    <div id="modal">
+      <div id="modal-handle"></div>
+      <h2 id="modal-title">New House</h2>
+      <div id="status-buttons">
+        <button class="status-btn" data-status="red">
+          <span class="status-icon">&#9679;</span>
+          <div class="status-text">
+            <strong>Not Interested</strong>
+            <small>Door closed, move on</small>
+          </div>
+        </button>
+        <button class="status-btn" data-status="yellow">
+          <span class="status-icon">&#9679;</span>
+          <div class="status-text">
+            <strong>Considering</strong>
+            <small>Follow up later</small>
+          </div>
+        </button>
+        <button class="status-btn" data-status="green">
+          <span class="status-icon">&#9679;</span>
+          <div class="status-text">
+            <strong>Sale!</strong>
+            <small>Closed the deal</small>
+          </div>
+        </button>
+      </div>
+      <div id="modal-footer">
+        <button id="delete-btn" class="hidden">&#128465; Remove Pin</button>
+        <button id="cancel-btn">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast notification -->
+  <div id="toast" class="hidden"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

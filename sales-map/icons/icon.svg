@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#1e293b"/>
+  <!-- Map pin shape -->
+  <path d="M256 96c-61.9 0-112 50.1-112 112 0 84 112 208 112 208s112-124 112-208c0-61.9-50.1-112-112-112z"
+        fill="#3b82f6"/>
+  <!-- Inner circle with dot colors split into three -->
+  <circle cx="256" cy="208" r="48" fill="#0f172a"/>
+  <path d="M256 160 a48 48 0 0 1 0 96 z" fill="#ef4444"/>
+  <path d="M256 160 a48 48 0 0 0 -41.6 24 l41.6 24 z" fill="#f59e0b"/>
+  <path d="M256 256 a48 48 0 0 1 -41.6-72 l41.6 24 z" fill="#22c55e"/>
+</svg>
