@@ -4,6 +4,14 @@
 
 Personal Finance Tracker is a web application for students and individuals who want a simple way to track income and expenses. It helps users organize transactions, understand spending habits, and make better financial decisions.
 
+## Also in this repository
+
+[`alignment-pwa/`](alignment-pwa/) — **TrueLine**, a standalone offline PWA that
+measures car wheel alignment (camber, toe, caster, SAI, Ackermann) using a
+phone's accelerometer and gyroscope. It shares nothing with the finance tracker:
+no build step, no dependencies, no server. See
+[`alignment-pwa/README.md`](alignment-pwa/README.md).
+
 ## Requirements
 
 ### Authentication
